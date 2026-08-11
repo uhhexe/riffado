@@ -7,17 +7,17 @@ transcript without retry loops, while short recordings behave exactly as before.
 
 ## Tasks
 
-- [ ] Add a tested ffmpeg chunking boundary for long Whisper-style audio.
+- [x] Add a tested ffmpeg chunking boundary for long Whisper-style audio.
   - Where: `src/lib/transcription/chunk-audio.ts`, `src/tests/transcription/chunk-audio.test.ts`
   - Verify: the focused test first fails because the helper is absent, then passes with multiple ordered Ogg chunks from a controlled audio fixture and proves cleanup on failure.
   - Fence: no provider calls, database writes, new dependency, env variable, or UI.
   - Tier: build
-- [ ] Route only recordings over 30 minutes through sequential chunk transcription and merge the results.
+- [x] Route only recordings over 30 minutes through sequential chunk transcription and merge the results.
   - Where: `src/lib/transcription/transcribe-recording.ts`, `src/tests/regressions/long-recording-chunking.test.ts`
   - Verify: the regression test first fails on one provider call, then passes with ordered chunk calls, ordered merged text, first detected language, and no persistence after a failed chunk.
   - Fence: Whisper-style path only; chat, Gemini, browser, Mynah, title generation, and persistence contracts remain unchanged.
   - Tier: build
-- [ ] Collapse concurrent calls for the same user and recording onto one in-flight transcription.
+- [x] Collapse concurrent calls for the same user and recording onto one in-flight transcription.
   - Where: `src/lib/transcription/transcribe-recording.ts`, `src/tests/regressions/long-recording-chunking.test.ts`
   - Verify: two concurrent calls share one provider sequence; different recordings do not; success and failure both clear the guard for a later retry.
   - Fence: same-process efficiency only; no new queue, lock table, cross-process claim, or route behavior.
