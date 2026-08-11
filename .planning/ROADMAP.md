@@ -2,12 +2,12 @@
 
 ## Handoff
 
-Riffado 0.6.4 is healthy on the Mini, but one 5h36m Plaud recording loops
-because the entire file is sent to whisper.cpp as one request. Implement the
-approved in-app chunking path on the pinned 0.6.4 release: sequential 30-minute
-Ogg/Opus chunks, one merged transcript, no partial persistence, and same-process
-in-flight dedupe. Next: execute phase 01 test-first, build a local image, deploy
-it with rollback artifacts, and prove the real recording completes.
+Phase 01 is complete. Riffado 0.6.4 on the Mini now transcribes long
+Whisper-style recordings as sequential 30-minute Ogg/Opus chunks, merges one
+complete result, and collapses duplicate same-process attempts. The original
+5h36m Plaud recording completed all 12 chunks and persisted exactly one local
+transcript; short audio playback and the pre-existing data inventory were
+verified unchanged.
 
 ## Approach (chosen) — chunk at Riffado's provider boundary
 
@@ -20,7 +20,7 @@ memory and weaker ordering). Decision logged to Engram:
 
 ## Stages
 
-- [ ] 01 — Long recording chunking → visible: the existing 5h36m recording has
+- [x] 01 — Long recording chunking → visible: the existing 5h36m recording has
   one complete local transcript and Riffado remains healthy.
 
 ## Risks & tripwires
