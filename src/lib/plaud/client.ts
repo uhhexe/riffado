@@ -96,6 +96,18 @@ export class PlaudClient {
             this.workspaceToken = workspaceToken;
             this.resolvedWorkspaceId = workspaceId;
         } catch (err) {
+            // A dead user token is not a degradable condition: the recording
+            // endpoints require the WT and answer 200-with-empty-list under the
+            // UT, so falling back here reports a healthy sync that returns
+            // nothing. Propagate so the caller stamps `invalidatedAt` and the
+            // reconnect banner fires. Non-auth failures (workspace unavailable,
+            // upstream 5xx) still degrade to the UT.
+            if (
+                err instanceof AppError &&
+                err.code === ErrorCode.PLAUD_INVALID_TOKEN
+            ) {
+                throw err;
+            }
             console.warn(
                 "[plaud] workspace token mint failed, falling back to user token:",
                 err instanceof Error ? err.message : err,

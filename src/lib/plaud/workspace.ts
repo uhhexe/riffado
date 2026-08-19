@@ -103,7 +103,12 @@ export async function mintPlaudWorkspaceToken(
 
     if (!res.ok) {
         const status = res.status;
-        const stale = status >= 400 && status < 500;
+        // A 4xx means the cached workspace id is suspect, so the caller relists
+        // and retries. 401 is deliberately excluded: it means the UT itself is
+        // rejected, the relist rides on that same UT and fails too, and its
+        // generic list error would mask PLAUD_INVALID_TOKEN -- the one signal
+        // that triggers the reconnect banner. A stale id surfaces as 403/404.
+        const stale = status >= 400 && status < 500 && status !== 401;
         let code: ErrorCode;
         let statusCode: number;
         let message = "Failed to mint Plaud workspace token";
@@ -121,7 +126,7 @@ export async function mintPlaudWorkspaceToken(
         }
         throw new WorkspaceTokenError(message, {
             httpStatus: status,
-            stale: status === 401 ? false : stale,
+            stale,
             code,
             statusCode,
         });
@@ -167,7 +172,11 @@ export class WorkspaceTokenError extends AppError {
     }
 }
 
-/** Resolve a WT; relist + retry on stale cache. */
+/**
+ * Resolve a WT; relist + retry on a stale cached workspace id. A 401 is not
+ * stale-retried: it propagates as PLAUD_INVALID_TOKEN so callers can flag the
+ * connection for reconnect.
+ */
 export async function resolveWorkspaceToken(
     userToken: string,
     apiBase: string,

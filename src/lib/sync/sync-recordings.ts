@@ -63,6 +63,13 @@ interface SyncResult {
      * show a reconnect banner.
      */
     needsReconnect?: boolean;
+    /**
+     * True when the workspace token could not be minted and this sync ran on
+     * the user token alone. Recording endpoints answer 200-with-empty-list
+     * under a UT, so a zero-recording result in this mode means "unknown",
+     * not "nothing new".
+     */
+    usingUserTokenFallback?: boolean;
 }
 
 // Per-user in-flight dedup within one process. Cross-process correctness
@@ -533,6 +540,7 @@ async function runSyncRecordingsForUser(userId: string): Promise<SyncResult> {
         let page = 0;
         let hasMore = true;
         let consecutiveEmptyPages = 0;
+        let plaudReturnedRecordings = false;
 
         while (hasMore && page < SYNC_CONFIG.MAX_PAGES) {
             const skip = page * SYNC_CONFIG.PAGE_SIZE;
@@ -549,6 +557,7 @@ async function runSyncRecordingsForUser(userId: string): Promise<SyncResult> {
             if (plaudRecordings.length === 0) {
                 break;
             }
+            plaudReturnedRecordings = true;
 
             for (
                 let i = 0;
@@ -602,6 +611,20 @@ async function runSyncRecordingsForUser(userId: string): Promise<SyncResult> {
             result.errors.push(
                 "Storage limit reached: some recordings were not synced. Upgrade or free up space to continue.",
             );
+        }
+
+        // The workspace token could not be minted for a non-auth reason and
+        // this run used the user token. That still works for accounts whose
+        // pasted token is itself a WT, so it is only reported as a failure
+        // when Plaud also returned nothing: an empty list under a UT is
+        // indistinguishable from a real empty account.
+        if (plaudClient.usingUserTokenFallback) {
+            result.usingUserTokenFallback = true;
+            if (!plaudReturnedRecordings) {
+                result.errors.push(
+                    "Plaud returned no recordings and the workspace token was unavailable, so this sync may have missed recordings. Reconnect your Plaud account if recordings are missing.",
+                );
+            }
         }
 
         const resolvedWorkspaceId = plaudClient.workspaceId;

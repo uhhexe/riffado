@@ -19,5 +19,6 @@ export const POST = apiHandler(async (request: Request) => {
         errors: result.errors,
         inProgress: result.inProgress,
         needsReconnect: result.needsReconnect ?? false,
+        usingUserTokenFallback: result.usingUserTokenFallback ?? false,
     });
 });
